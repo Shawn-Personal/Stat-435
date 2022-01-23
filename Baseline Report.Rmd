@@ -1,6 +1,10 @@
 ---
-title: "Baseline Investigation"
-output: pdf_document
+title: 'Written Report #1'
+author: "Shuo Li"
+subtitle: Baseline Investigation
+output:
+  word_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -29,27 +33,33 @@ We could have collected 1000 y300 data which will give a Relative Precision arou
 
 ```{r}
 summary(BaselineData)
+paste("The standard deviation of y300 is:", sd(BaselineData$y300))
 paste("The number of rows in this dataset is:", nrow(BaselineData))
 ```
 From the R outputs, we see that we have 500 data points for y300 over 3 different shifts per day for a total of 5 days.\newline
+From the output above, we see that the mean and median of y300 is similar, IQR is between -2.200 and 4.800, and the standard deviation is 4.98232154883966\newline
+The maximum output of y300 is 15.00 and the minimum output of y300 is -14.600\newline
+
 
 ## Analysis
 
 ```{r}
-plot(BaselineData$y300, type = "b", ylab = "y300", xlab = "Obtained Order", main = "Run Chart")
+plot(BaselineData$y300, type = "b", ylab = "y300", xlab = "Obtained Order by Part Number", main = "Run Chart")
 ```
+From the Run Chart of y300 above, we can see that it does not seem to have constant mean. Rather the output of y300 goes up and down slightly as the partnumber increases.\\
 
+Next we will investigate the output of y300 conditioned on different shifts or days.\newline
 ```{r}
 library(ggplot2)
 shifts = factor(BaselineData$shift)
 days = factor(BaselineData$daycount)
 ggplot(BaselineData, aes(x=partnum, y=y300, colour=shifts, group=shifts)) + geom_line() + geom_point() + ggtitle("Run Chart Grouped by Shifts") + xlab("Part number") + ylab("y300")
 ```
-
+Based on the run chart by shifts, we can see that for same shift, the mean and variance varies.\newline
 ```{r}
 ggplot(BaselineData, aes(x=partnum, y=y300, colour=days, group=days)) + geom_line() + geom_point() + ggtitle("Run Chart Grouped by Days") + xlab("Part number") + ylab("y300")
 ```
-
+From the Run chart grouped by days above, we see that there seems to be a big decrease for day 1 as the the part number increases.\newline
 ```{r}
 boxplot(BaselineData$y300, main = "Boxplot for y300")
 abline(h=mean(BaselineData$y300))
@@ -60,22 +70,36 @@ my5cols <- c("#E7B800", "#2E9FDF", "#FC4E07", "#52854C", "#4E84C4", "#293352")
 my3cols <- c("#E7B800", "#2E9FDF", "#FC4E07")
 
 fun_mean <- function(x){
-  return(data.frame(y=mean(x),label=mean(x,na.rm=T)))}
+  return(data.frame(y=mean(x),label=paste("Mean:", round(mean(x,na.rm=T),4))))}
+fun_sd <- function(x){
+  return(data.frame(y=sd(x),label=paste("SD:", round(sd(x,na.rm=T),4))))}
 
+```
+From the box plot, we see that the there are a few outliers below the whiskers and no outliers above the whisker.\newline
+```{r}
 p1 <- ggplot(BaselineData, aes(x = shifts, y = y300))
 bxp1 <- p1 + geom_boxplot(aes(color = shifts)) + stat_summary(fun = mean, geom="point",colour="darkred", size=3) +
 stat_summary(fun.data = fun_mean, geom="text", vjust=-0.7) +
-  scale_color_manual(values = my3cols)
+  scale_color_manual(values = my3cols) + stat_summary(fun.data = fun_sd, geom="text", vjust=1)
 bxp1
-
+```
+The plot above is the histogram of y300 grouped by shifts, this should tell us if shifts outputs different mean and/or variance for y300.\newline
+We see the mean decrease as shift number increase. However, the variance does not seem to have a increase or decreasing pattern when shift number increases. The variance seems to follow quadratic shape in increase and deacrease as shift increases.\newline
+We see that shift 1 have the highest mean and variance out of the three shifts, and it has one outlier above the whisker and one below the whisker.\newline
+Shift 2 has the second highest mean but the lowest variance, it has two outliers and both are below the whiskers.\newline
+Shift 3 has the lowest mean but second highest variance, but it does not have any outliers above or below the whiskers.\newline
+```{r}
 p2 <- ggplot(BaselineData, aes(x = days, y = y300))
 bxp2 <- p2 + geom_boxplot(aes(color = days)) + stat_summary(fun = mean, geom="point",colour="darkred", size=3) +
-stat_summary(fun.data = fun_mean, geom="text", vjust=-0.7) +
+stat_summary(fun.data = fun_mean, geom="text", vjust=-0.7) + stat_summary(fun.data = fun_sd, geom="text", vjust=-0.5) +
   scale_color_manual(values = my5cols)
 bxp2
-
 ```
-
+The plot above is the histogram of y300 grouped by days, this should tell us if days have outputs different mean and/or variance for y300.\newline
+We see a V pattern of the mean and variance as days increases. From day 1 to day 3 the mean and variance decreases by day, and from day 3 to day 5 the mean and variance increases by day. This suggests that the mean of y300 changes depending on the day of the week it was produced.\newline
+The mean change from day 1 to day 2, day 3 to day 4, and day 4 to day 5 is significantly larger in magnitude compared to the mean change from day 2 to day 3.\newline
+The variance change from day 1 to day 2, and day 3 to day 4 is significantly larger in magnitude compared to the variance change from day 2 to day 3 and day 4 to day 5.\newline
+There are only two days where outlier above and/or below the whiskers. These days are day 3 where there is a outlier above and below the whisker, and day 5 where there is a outlier below the whisker.\newline
 ```{r}
 rx = range(BaselineData$y300)
 hist(BaselineData$y300, main = "Histogram for y300", probability = TRUE, breaks = seq(rx[1], rx[2], length.out = 25))
@@ -83,7 +107,7 @@ abline(v = mean(BaselineData$y300),                       # Add line for mean
        col = "red",
        lwd = 3)
 ```
-
+From the histogram of y300 outputs, we can see it seems to following a normal distribution with a slight left skew.\newline
 
 ```{r}
 BaselineDataFactored = BaselineData
@@ -103,7 +127,7 @@ abline(v = mean(BaselineData[BaselineData$shift == 3,]$y300),                   
        col = "red",
        lwd = 1)
 ```
-
+From the Histogram by shifts plot, we see that the histogram of all three shifts seems to have normal distribution.\newline
 ```{r}
 par(mfrow=c(2,3))
 hist(BaselineData[BaselineData$daycount == 1,]$y300, main = "Histogram for Day 1", xlab = "y300", xlim = c(-15, 15), probability = TRUE, breaks = seq(rx[1], rx[2], length.out = 15))
@@ -127,6 +151,13 @@ abline(v = mean(BaselineData[BaselineData$daycount == 5,]$y300),                
        col = "red",
        lwd = 1)
 ```
-
+From the histogram by days plot, we see that all the days seems to have a normal distribution and slight left skewed.\newline
 
 ## Conclusion
+
+From the analysis, we see that y300 has mean of 4.98232154883966, median of 4.98232154883966 and standard deviation of 4.98232154883966\newline
+The IQR is between -2.200 and 4.800, maximum output of y300 is 15.00 and the minimum output of y300 is -14.600\newline
+We saw that the Histogram of y300, y300 grouped by shifts, and y300 grouped by days all seems to have a normal distribution with a slight left skew.\newline
+From the box plot of y300 outputs, we see that the only outliers are below the whiskers.\newline
+From the box plot of y300 outputs grouped by shift, we see the mean decreases as shift increase and the variance seems to follow quadratic shape as shift increases centered around the shift 2.\newline
+From the box plot of y300 outputs group by days, we see that both mean and variance seems to have a quadratic shape or V shape as days increase centered around day 3. The mean increase/decrease is the biggest in magnitude for day 1 to day 2, day 3 to day 4, and day 4 to day 5. The standard deviation increase/decrease is the biggest in magnitude for day 1 to day 2, and day 3 to day 4.\newline
